@@ -1,0 +1,67 @@
+# begin execution at address zero
+	.pos 0
+	irmovq stack, %rsp	# set stack to 0xFFFF, grow to lower addresses
+	call main		# start main
+	halt			# done
+
+# set up array, length, followed by data
+	.align 8
+length:	.quad 0x0A
+array:	.quad 0x0FFF
+	.quad 0x0F20
+	.quad 0xFFFFFFFFFFFFFF45
+	.quad 0xFFFFFFFFFFFFFFFF
+	.quad 0x01
+	.quad 0x03
+	.quad 0x04
+	.quad 0x0A
+	.quad 0x09
+	.quad 0x11
+
+main:	irmovq array,%rdi
+        irmovq length,%rax
+        mrmovq (%rax),%rsi
+	call sort
+	ret
+
+# void sort(long *array, long length)
+# array in %rdi, length in %rsi
+sort:	
+	irmovq  $1, %r10	# constant
+        subq    %r10, %rsi
+        jmp     L2
+L3:
+        addq    %r10, %rax	# increment
+L5:
+	rrmovq  %rax, %r11	# throwaway i
+        subq    %rsi, %r11
+        jge     L7
+	rrmovq  %rax, %rdx
+	addq	%rdx, %rdx	# (2)*i
+	addq	%rdx, %rdx	# (2)*i
+	addq	%rdx, %rdx	# (2)*i
+	addq	%rdi, %rdx	# data + 8*i
+        mrmovq	(%rdx), %r9	# data[i]
+        mrmovq  8(%rdx), %rcx	# data[i+1]
+	rrmovq  %rcx, %r11	# throwaway data[i+1]
+	irmovq  $8, %r14
+	addq    %rdx, %r14
+	rmmovq %rcx, (%rdx)
+	rmmovq %rcx, 8(%rdx)
+        subq    %r9, %r11	# conditional for data[i] and data[i+1]
+	cmovge   %rdx, %r14	# data[i+1] >= data[i]
+	rmmovq  %r9, (%r14)
+        jmp     L3
+L7:
+        subq    %r10, %rsi
+L2:
+        andq   	%rsi, %rsi
+        jle     L8
+        irmovq 	$0, %rax	# reset i
+        jmp     L5
+L8:
+	ret
+	
+# stack starts here
+	.pos 0xFFF
+stack:

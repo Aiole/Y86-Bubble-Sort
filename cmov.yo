@@ -1,0 +1,67 @@
+                            | # begin execution at address zero
+0x000:                      | 	.pos 0
+0x000: 30f4ff0f000000000000 | 	irmovq stack, %rsp	# set stack to 0xFFFF, grow to lower addresses
+0x00a: 807000000000000000   | 	call main		# start main
+0x013: 00                   | 	halt			# done
+                            | 
+                            | # set up array, length, followed by data
+0x018:                      | 	.align 8
+0x018: 0a00000000000000     | length:	.quad 0x0A
+0x020: ff0f000000000000     | array:	.quad 0x0FFF
+0x028: 200f000000000000     | 	.quad 0x0F20
+0x030: 45ffffffffffffff     | 	.quad 0xFFFFFFFFFFFFFF45
+0x038: ffffffffffffffff     | 	.quad 0xFFFFFFFFFFFFFFFF
+0x040: 0100000000000000     | 	.quad 0x01
+0x048: 0300000000000000     | 	.quad 0x03
+0x050: 0400000000000000     | 	.quad 0x04
+0x058: 0a00000000000000     | 	.quad 0x0A
+0x060: 0900000000000000     | 	.quad 0x09
+0x068: 1100000000000000     | 	.quad 0x11
+                            | 
+0x070: 30f72000000000000000 | main:	irmovq array,%rdi
+0x07a: 30f01800000000000000 |         irmovq length,%rax
+0x084: 50600000000000000000 |         mrmovq (%rax),%rsi
+0x08e: 809800000000000000   | 	call sort
+0x097: 90                   | 	ret
+                            | 
+                            | # void sort(long *array, long length)
+                            | # array in %rdi, length in %rsi
+0x098:                      | sort:	
+0x098: 30fa0100000000000000 | 	irmovq  $1, %r10	# constant 1
+0x0a2: 61a6                 |         subq    %r10, %rsi
+0x0a4: 701501000000000000   |         jmp     L2
+0x0ad:                      | L3:
+0x0ad: 60a0                 |         addq    %r10, %rax	# i++
+0x0af:                      | L5:
+0x0af: 200b                 | 	rrmovq  %rax, %r11	# preserve i
+0x0b1: 616b                 |         subq    %rsi, %r11
+0x0b3: 751301000000000000   |         jge     L7
+0x0bc: 2002                 | 	rrmovq  %rax, %rdx
+0x0be: 6022                 | 	addq	%rdx, %rdx	# (2)*i
+0x0c0: 6022                 | 	addq	%rdx, %rdx	# (2)*i
+0x0c2: 6022                 | 	addq	%rdx, %rdx	# (2)*i
+0x0c4: 6072                 | 	addq	%rdi, %rdx	# data + 8*i
+0x0c6: 50920000000000000000 |         mrmovq	(%rdx), %r9	# data[i]
+0x0d0: 50120800000000000000 |         mrmovq  8(%rdx), %rcx	# data[i+1]
+0x0da: 201b                 | 	rrmovq  %rcx, %r11	# preserve data[i+1]
+0x0dc: 30fe0800000000000000 | 	irmovq  $8, %r14
+0x0e6: 602e                 | 	addq    %rdx, %r14
+0x0e8: 40120000000000000000 | 	rmmovq %rcx, (%rdx)
+0x0f2: 40120800000000000000 | 	rmmovq %rcx, 8(%rdx)
+0x0fc: 619b                 |         subq    %r9, %r11	# conditional for data[i] and data[i+1]
+0x0fe: 252e                 | 	cmovge   %rdx, %r14	# data[i+1] >= data[i]
+0x100: 409e0000000000000000 | 	rmmovq  %r9, (%r14)
+0x10a: 70ad00000000000000   |         jmp     L3
+0x113:                      | L7:
+0x113: 61a6                 |         subq    %r10, %rsi
+0x115:                      | L2:
+0x115: 6266                 |         andq   	%rsi, %rsi
+0x117: 713301000000000000   |         jle     L8
+0x120: 30f00000000000000000 |         irmovq 	$0, %rax	# i = 0
+0x12a: 70af00000000000000   |         jmp     L5
+0x133:                      | L8:
+0x133: 90                   | 	ret
+                            | 	
+                            | # stack starts here
+0xfff:                      | 	.pos 0xFFF
+0xfff:                      | stack:
